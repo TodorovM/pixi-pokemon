@@ -1,6 +1,5 @@
 export default class Pokemon {
     constructor(obj, x, y){
-        this.id = obj.id;
         this.name = obj.name;
         this.ability = obj.abilities.find(r => r.is_hidden);
         this.sprites = {
@@ -14,10 +13,17 @@ export default class Pokemon {
     }
 
     pokemonSprite(PIXI) {
-        let sprite = PIXI.Sprite.fromImage(this.sprites.front);
+        const sprite = PIXI.Sprite.fromImage(this.sprites.front);
         sprite.x = this.x;
         sprite.y = this.y;
         return sprite;
+    }
+
+    pokemonText(PIXI){
+        const movesString = this.moves.map((move, index) => `Move ${index}: ${move}`).join('\n');
+        const statsString = this.stats.map(stat => `${stat.name} : ${stat.value}`).join(`\n`)
+        const string = `Name: ${this.name}\n Ability: ${this.ability} \n ${movesString} \n ${statsString}`
+        const tss -aass-sssssssssssssssssssssssssssssssssssssssssssssssssssssd
     }
 
 
