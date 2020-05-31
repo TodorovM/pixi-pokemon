@@ -6,8 +6,6 @@ const POKEMON_URL = 'https://pokeapi.co/api/v2/pokemon/';
 
 const EventEmiter = new PIXI.utils.EventEmitter();
 
-let pokemons = [];
-
 const app = new PIXI.Application({
   width: window.innerWidth,
   height: window.innerHeight,
@@ -32,6 +30,15 @@ async function getAllPokemon() {
   return pokemonArray;
 }
 
+function createPokemonObjects(data) {
+  let pokemons = [];
+  data.forEach(pkmn => {
+    const pokemon = new Pokemon(pkmn, 0, 0);
+    pokemons.push(pokemon);
+  })
+  return pokemons;
+}
+
 function drawButton(x, y, text, color){
   const rect = new PIXI.Graphics();
   const textColor = color === '0xFFFFFF' ? 'black' : 'white' ; 
@@ -50,13 +57,13 @@ function drawButton(x, y, text, color){
   return rect;
 }
 
-function drawPokemon(data, x, y, index, text) {
-  const pokemon = new Pokemon(data, x, y, index);
-  pokemons.push(pokemon);
+function drawPokemon(pokemon, x, y, text) {
+  pokemon.x = x;
+  pokemon.y = y;
   const container = pokemon.pokemonContainer(text);
   container.interactive = true;
   container.on('click', () => {
-     EventEmiter.emit('pokemon_clicked', pokemon.index);
+     EventEmiter.emit('pokemon_clicked', pokemon.name);
   })
   app.stage.addChild(container) 
 }
@@ -68,17 +75,17 @@ function drawGrid(data) {
   data.forEach((el, index) => {
     const x = (index % columns) * spriteWidth;
     const y = Math.floor(index / columns) * (spriteWidth) ;
-    drawPokemon(el, x, y, index );
+    drawPokemon(el, x, y );
   });
   const height = (((rows + 1) * spriteWidth) > window.innerHeight) ? (rows + 1) * spriteWidth : window.innerHeight;
   app.renderer.resize(window.innerWidth, height);
 }
 
-function showInfo(pokemon, index){
-  drawPokemon(pokemon, 250 - 48, 0, index, true)
+function showInfo(pokemon){
+  drawPokemon(pokemon, 250 - 48, 0, true)
   const fightButton = drawButton(140, 330, 'Fight!', '0xFF0000')
   fightButton.on('click', () => {
-    EventEmiter.emit('start_battle', new Pokemon(pokemon));
+    EventEmiter.emit('start_battle', pokemon);
   })
 
   const resetButton = drawButton((140 + fightButton.width + 50), 330, 'Go Back', '0x0000FF');
@@ -101,20 +108,23 @@ function reset(data){
 }
 
 function start(data) {
-  drawGrid(data);
+  const pokemons = createPokemonObjects(data);
+  drawGrid(pokemons);
   EventEmiter.on('pokemon_clicked', (e) =>{
-    pokemons.splice(e, 1);
     clear();
     app.renderer.resize(500, 500);
-    showInfo(data[e], e);
+    const pokemonClicked = pokemons.find(r => r.name === e)
+    showInfo(pokemonClicked);
   })
-  EventEmiter.on('start_battle', (е) => {
+  EventEmiter.on('start_battle', (e) => {
     clear();
-    const battle = new Battle(е, pokemons, 0, 0);
-    battle.startBattle(app.stage);
+    app.renderer.resize(400, 400);
+    const pokemonOpponents = pokemons.filter(r => r !== e);
+    const battle = new Battle(e, pokemonOpponents, app.stage);
+    battle.battle();
   })
   EventEmiter.on('reset', () => {
-    reset(data);
+    reset(pokemons);
   })
 }
 
